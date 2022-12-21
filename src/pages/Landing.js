@@ -22,6 +22,7 @@ import LanguagesDropdown from "../components/LanguagesDropdown";
 import { languageOptions } from "../constants/languageOptions";
 
 import Footer from "../components/Footer";
+import { useCallback } from "react";
 
 const javascriptDefault = `/**
 * Problem: Binary Search: Search a sorted array for a target value.
@@ -70,32 +71,42 @@ const Landing = () => {
 	const enterPress = useKeyPress("Enter");
 	const ctrlPress = useKeyPress("Control");
 
-	const onSelectChange = (sl) => {
-		console.log("selected Option...", sl);
-		setLanguage(sl);
-	};
+	const checkStatus = useCallback(async (token) => {
+		const options = {
+			method: "GET",
+			url: process.env.REACT_APP_RAPID_API_URL + "/" + token,
+			params: { base64_encoded: "true", fields: "*" },
+			headers: {
+				"X-RapidAPI-Host": process.env.REACT_APP_RAPID_API_HOST,
+				"X-RapidAPI-Key": process.env.REACT_APP_RAPID_API_KEY,
+			},
+		};
+		try {
+			let response = await axios.request(options);
+			let statusId = response.data.status?.id;
 
-	useEffect(() => {
-		if (enterPress && ctrlPress) {
-			console.log("enterPress", enterPress);
-			console.log("ctrlPress", ctrlPress);
-			handleCompile();
-		}
-	}, [ctrlPress, enterPress, handleCompile]);
-
-	const onChange = (action, data) => {
-		switch (action) {
-			case "code": {
-				setCode(data);
-				break;
+			// Processed - we have a result
+			if (statusId === 1 || statusId === 2) {
+				// still processing
+				setTimeout(() => {
+					checkStatus(token);
+				}, 2000);
+				return;
+			} else {
+				setProcessing(false);
+				setOutputDetails(response.data);
+				showSuccessToast(`Compiled Successfully!`);
+				console.log("response.data", response.data);
+				return;
 			}
-			default: {
-				console.warn("case not handled!", action, data);
-			}
+		} catch (err) {
+			console.log("err", err);
+			setProcessing(false);
+			showErrorToast();
 		}
-	};
+	}, []);
 
-	const handleCompile = () => {
+	const handleCompile = useCallback(() => {
 		setProcessing(true);
 		setOutputDetails(null);
 
@@ -105,6 +116,7 @@ const Landing = () => {
 			source_code: btoa(code),
 			stdin: btoa(customInput),
 		};
+
 		const options = {
 			method: "POST",
 			url: process.env.REACT_APP_RAPID_API_URL,
@@ -141,41 +153,32 @@ const Landing = () => {
 				setProcessing(false);
 				console.log("catch block...", error);
 			});
+	}, [checkStatus, code, customInput, language.id]);
+
+	useEffect(() => {
+		if (enterPress && ctrlPress) {
+			console.log("enterPress", enterPress);
+			console.log("ctrlPress", ctrlPress);
+
+			handleCompile();
+		}
+	}, [ctrlPress, enterPress, handleCompile]);
+
+	const onChange = (action, data) => {
+		switch (action) {
+			case "code": {
+				setCode(data);
+				break;
+			}
+			default: {
+				console.warn("case not handled!", action, data);
+			}
+		}
 	};
 
-	const checkStatus = async (token) => {
-		const options = {
-			method: "GET",
-			url: process.env.REACT_APP_RAPID_API_URL + "/" + token,
-			params: { base64_encoded: "true", fields: "*" },
-			headers: {
-				"X-RapidAPI-Host": process.env.REACT_APP_RAPID_API_HOST,
-				"X-RapidAPI-Key": process.env.REACT_APP_RAPID_API_KEY,
-			},
-		};
-		try {
-			let response = await axios.request(options);
-			let statusId = response.data.status?.id;
-
-			// Processed - we have a result
-			if (statusId === 1 || statusId === 2) {
-				// still processing
-				setTimeout(() => {
-					checkStatus(token);
-				}, 2000);
-				return;
-			} else {
-				setProcessing(false);
-				setOutputDetails(response.data);
-				showSuccessToast(`Compiled Successfully!`);
-				console.log("response.data", response.data);
-				return;
-			}
-		} catch (err) {
-			console.log("err", err);
-			setProcessing(false);
-			showErrorToast();
-		}
+	const onSelectChange = (sl) => {
+		console.log("selected Option...", sl);
+		setLanguage(sl);
 	};
 
 	function handleClearSubmission() {

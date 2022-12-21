@@ -1,21 +1,12 @@
 import React, { useEffect, useState } from "react";
 
 import Editor from "@monaco-editor/react";
+import { useCallback } from "react";
 
 const OutputWindow = ({ outputDetails, theme }) => {
 	const [output, setOutput] = useState("");
 
-	useEffect(() => {
-		if (outputDetails) {
-			setOutput(getOutput());
-
-			return;
-		}
-
-		setOutput("");
-	}, [outputDetails, getOutput]);
-
-	const getOutput = () => {
+	const getOutput = useCallback(() => {
 		let statusId = outputDetails?.status?.id;
 
 		if (statusId === 6) {
@@ -32,7 +23,17 @@ const OutputWindow = ({ outputDetails, theme }) => {
 		}
 
 		return atob(outputDetails?.stderr);
-	};
+	}, [outputDetails]);
+
+	useEffect(() => {
+		if (outputDetails) {
+			setOutput(getOutput());
+
+			return;
+		}
+
+		setOutput("");
+	}, [outputDetails, getOutput]);
 
 	return (
 		<>
