@@ -13,7 +13,7 @@ const OutputWindow = ({ outputDetails, theme }) => {
 		}
 
 		setOutput("");
-	}, [outputDetails]);
+	}, [outputDetails, getOutput]);
 
 	const getOutput = () => {
 		let statusId = outputDetails?.status?.id;

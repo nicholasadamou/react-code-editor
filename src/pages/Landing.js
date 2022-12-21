@@ -81,7 +81,7 @@ const Landing = () => {
 			console.log("ctrlPress", ctrlPress);
 			handleCompile();
 		}
-	}, [ctrlPress, enterPress]);
+	}, [ctrlPress, enterPress, handleCompile]);
 
 	const onChange = (action, data) => {
 		switch (action) {
